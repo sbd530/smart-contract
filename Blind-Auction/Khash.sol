@@ -6,4 +6,4 @@
 //   function hashMe( uint value1, bytes32 password) public {
 // 	  hashedValue = keccak256(abi.encodePacked(value1, password));
 //   }
-// }​
+//  }​

@@ -50,7 +50,7 @@ contract BlindAuction {
     }
     
     function reveal(uint value, bytes32 secret) public   validPhase(Phase.Reveal){
-        uint refund = 0;
+        uint refund = 0; 
             Bid storage bidToCheck = bids[msg.sender];
             if (bidToCheck.blindedBid == keccak256(abi.encodePacked(value, secret))) {
             refund += bidToCheck.deposit;
