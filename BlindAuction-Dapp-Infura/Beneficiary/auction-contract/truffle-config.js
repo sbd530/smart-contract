@@ -7,7 +7,7 @@ module.exports = {
       provider: () =>
         new HDWalletProvider(
           beneficiary,
-          "https://ropsten.infura.io/v3/e43ccc622b8c4b4aa4342d672cdcd7dc"
+          "https://ropsten.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161" // infura-rosten endpoint
         ),
       network_id: 3,
       gas: 5000000,
