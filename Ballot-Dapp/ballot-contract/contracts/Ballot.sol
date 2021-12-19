@@ -1,72 +1,69 @@
-// SPDX-License-Identifier: MIT
-pragma solidity >=0.4.22 <0.9.0;
-
+pragma solidity >=0.4.22 <0.6.0;
 contract Ballot {
 
-    struct Voter {                     
+    struct Voter {
         uint weight;
         bool voted;
         uint vote;
     }
-    struct Proposal {                  
+    struct Proposal {
         uint voteCount;
     }
 
     address chairperson;
-    mapping(address => Voter) voters;  
+    mapping(address => Voter) voters;
     Proposal[] proposals;
 
-    
-       //modifiers
-   
-    modifier onlyChair() 
-     {require(msg.sender == chairperson);
+    enum Phase {Init, Regs, Vote, Done}
+    Phase public state = Phase.Done;
+
+    //modifiers
+   modifier validPhase(Phase reqPhase)
+    { require(state == reqPhase, "Not the required phase");
+      _;
+    }
+    modifier onlyChair()
+     {require(msg.sender == chairperson, "Only chairperson can perform this operation");
       _;
      }
-     
-     modifier validVoter()
-    {
-        require(voters[msg.sender].weight > 0, "Not a Registered Voter");
-        _;
-    }
 
-    constructor (uint numProposals) {
+    constructor (uint numProposals) public  {
         chairperson = msg.sender;
         voters[chairperson].weight = 2; // weight 2 for testing purposes
-        //proposals.length = numProposals; -- before 0.6.0
-        for (uint prop = 0; prop < numProposals; prop ++)
-            proposals.push(Proposal(0));
-        
+        proposals.length = numProposals;
+        state = Phase.Regs;
     }
-    
-     
-    function register(address voter) public  onlyChair {
-        
+
+     function changeState(Phase x) onlyChair public {
+        require (x > state, "Can only move to greater state");
+        state = x;
+     }
+
+    function register(address voter) public validPhase(Phase.Regs) onlyChair {
+        require (! voters[voter].voted);
         voters[voter].weight = 1;
-        voters[voter].voted = false;
+       // voters[voter].voted = false;
     }
 
-   
-    function vote(uint toProposal) public  validVoter{
-      
-        Voter memory sender = voters[msg.sender];
-        
-        require (!sender.voted); 
-        require (toProposal < proposals.length); 
-        
-        sender.voted = true;
-        sender.vote = toProposal;   
-        proposals[toProposal].voteCount += sender.weight;
+
+    function vote(uint toProposal) public validPhase(Phase.Vote)  {
+        //Cant not use like this: Voter memory sender = voters[msg.sender];
+        //Changes happen only locally
+        require (!voters[msg.sender].voted, "Voter has already voted");
+        require (toProposal < proposals.length, "Proposal number over limit");
+
+        voters[msg.sender].voted = true;
+        voters[msg.sender].vote = toProposal;
+        proposals[toProposal].voteCount += voters[msg.sender].weight;
     }
 
-    function reqWinner() public view returns (uint winningProposal) {
-       
+    function reqWinner() public validPhase(Phase.Done) view returns (uint winningProposal) {
         uint winningVoteCount = 0;
-        for (uint prop = 0; prop < proposals.length; prop++) 
+        for (uint prop = 0; prop < proposals.length; prop++)
             if (proposals[prop].voteCount > winningVoteCount) {
                 winningVoteCount = proposals[prop].voteCount;
                 winningProposal = prop;
             }
-       assert(winningVoteCount>=3);
+       assert (winningVoteCount>=3);
     }
 }
